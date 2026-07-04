@@ -14,8 +14,8 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - uses: al-cheb/configure-pagefile-action@v1.5	
-        with:	
+      - uses: al-cheb/configure-pagefile-action@v1.5
+        with:
             minimum-size: 16GB
             maximum-size: 16GB
             disk-root: "C:"
@@ -112,5 +112,46 @@ jobs:
         with:
           name: fairy-stockfish-macos-m1-${{ matrix.arch }}
           path: src/fairy-stockfish*
+          if-no-files-found: error
+          compression-level: 9
+
+  macos-universal:
+    # Fuses the Intel (x86-64) and Apple Silicon builds above into single
+    # universal (fat) binaries via `lipo`, so the launcher can ship one file
+    # per build type instead of picking an architecture-specific one.
+    needs: [ macos, macos-m1 ]
+    runs-on: macos-14
+
+    steps:
+      - name: Download Intel build
+        uses: actions/download-artifact@v7
+        with:
+          name: fairy-stockfish-macos-x86-64
+          path: intel
+
+      - name: Download Apple Silicon build
+        uses: actions/download-artifact@v7
+        with:
+          name: fairy-stockfish-macos-m1-apple-silicon
+          path: arm
+
+      - name: Combine into universal binaries
+        run: |
+          set -e
+          mkdir -p universal
+          chmod +x intel/* arm/*
+          for kind in "" "-largeboards" "-all"; do
+            intel_bin="intel/fairy-stockfish${kind}_x86-64"
+            arm_bin="arm/fairy-stockfish${kind}_apple-silicon"
+            out_bin="universal/fairy-stockfish${kind}-universal"
+            lipo -create "$intel_bin" "$arm_bin" -output "$out_bin"
+            chmod +x "$out_bin"
+            lipo -info "$out_bin"
+          done
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fairy-stockfish-macos-universal
+          path: universal/fairy-stockfish*
           if-no-files-found: error
           compression-level: 9
