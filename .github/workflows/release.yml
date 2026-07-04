@@ -20,7 +20,7 @@ jobs:
             maximum-size: 16GB
             disk-root: "C:"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       - name: make
         run: cd src && make clean && make -j build COMP=mingw ARCH=${{ matrix.arch }} EXE=fairy-stockfish_${{ matrix.arch }}.exe && strip fairy-stockfish_${{ matrix.arch }}.exe
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       - name: make
         run: cd src && make clean && make -j build COMP=gcc ARCH=${{ matrix.arch }} EXE=fairy-stockfish_${{ matrix.arch }} && strip fairy-stockfish_${{ matrix.arch }}
@@ -70,9 +70,14 @@ jobs:
       matrix:
         arch: ["x86-64"]
     runs-on: macos-15-intel
+    env:
+      # 10.15 (Catalina) — widely-used floor for a console/CLI tool with no
+      # GUI dependency; also the last version to support 32-bit apps, so a
+      # natural, commonly-adopted dividing line for this kind of binary.
+      MACOSX_DEPLOYMENT_TARGET: "10.15"
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       - name: make
         run: cd src && make clean && make -j build COMP=clang ARCH=${{ matrix.arch }} EXE=fairy-stockfish_${{ matrix.arch }} && strip fairy-stockfish_${{ matrix.arch }}
@@ -95,9 +100,14 @@ jobs:
       matrix:
         arch: ["apple-silicon"]
     runs-on: macos-14
+    env:
+      # 11.0 (Big Sur) — the actual hard floor for arm64 Macs; there is no
+      # such thing as an Apple Silicon Mac running anything older than this,
+      # so this isn't a stylistic choice, it's the real minimum possible.
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
 
       - name: make
         run: cd src && make clean && make -j build COMP=clang ARCH=${{ matrix.arch }} EXE=fairy-stockfish_${{ matrix.arch }} && strip fairy-stockfish_${{ matrix.arch }}
